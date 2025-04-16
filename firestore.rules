@@ -1,0 +1,251 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isDoctor() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+    }
+
+    function isPatient() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'patient';
+    }
+
+    // Allow admin access for the specific email
+    match /{document=**} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.email == 'admin@hospital.com' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // Single rule for doctor availability with simplified permissions
+    match /doctorAvailability/{documentId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+    }
+
+    // Allow patients to read doctor information
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && 
+        (request.auth.token.email == 'admin@hospital.com' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor' ||
+         request.auth.uid == userId);
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null && 
+        (request.auth.token.email == 'admin@hospital.com' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // Allow access to user data
+    match /users/{userId} {
+      allow read: if request.auth != null;
+    }
+
+    // Doctors collection rules
+    match /doctors/{doctorId} {
+      allow read: if request.auth != null;
+      allow write, delete: if request.auth != null && 
+        (request.auth.token.email == 'admin@hospital.com' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // Clear appointments rule for reading booked slots
+    match /appointments/{appointmentId} {
+      allow read: if true;  // Allow anyone to check booked slots
+      allow create: if request.auth != null && 
+        request.resource.data.patientId == request.auth.uid;
+    }
+
+    // Allow patients to manage their appointments
+    match /appointments/{appointmentId} {
+      allow create: if request.auth != null && 
+      request.resource.data.patientId == request.auth.uid;
+      allow read: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+      allow update: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+      allow delete: if request.auth != null && 
+      resource.data.patientId == request.auth.uid;
+    }
+
+    // Allow doctors to read/write their own appointments
+    match /appointments/{appointmentId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.doctorId == request.auth.uid ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor');
+    }
+
+    // Updated appointments collection rules
+    match /appointments/{appointmentId} {
+      allow read: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow create: if request.auth != null && 
+        request.resource.data.patientId == request.auth.uid;
+      allow update: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow delete: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // Patients collection rules
+    match /patients/{patientId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == patientId || 
+        (request.auth.token.email == 'admin@hospital.com' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+      allow write: if request.auth != null && (
+        request.auth.uid == patientId || 
+        (request.auth.token.email == 'admin@hospital.com' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Allow doctors to access patient records
+    match /patients/{patientId}/medical-records/{recordId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == patientId ||  // Patient can read their own records
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor' // Doctors can read
+      );
+      allow create, update: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+    }
+
+    // Update or add this unified notifications rule
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor'
+      );
+      allow create: if request.auth != null && 
+        (request.resource.data.patientId == request.auth.uid ||
+         request.resource.data.doctorId == request.auth.uid);
+      allow update: if request.auth != null && 
+        (resource.data.patientId == request.auth.uid ||
+         resource.data.doctorId == request.auth.uid);
+    }
+
+    // Appointments rules
+    match /appointments/{appointmentId} {
+      // Allow patients to read their own appointments
+      allow read: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+      
+      // Allow patients to create appointments
+      allow create: if request.auth != null && 
+        request.resource.data.patientId == request.auth.uid;
+        
+      // Allow updates by involved parties
+      allow update: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+    }
+
+    // Allow doctors to read all patient records
+    match /patients/{patientId}/medical-records/{recordId} {
+      allow read: if isDoctor() || 
+        (isPatient() && request.auth.uid == patientId);
+      allow write: if isDoctor();
+    }
+
+    // Allow doctors to read patient data
+    match /users/{userId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || 
+        isDoctor()
+      );
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Update notifications rules to allow doctor access
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && (
+        resource.data.doctorId == request.auth.uid ||
+        resource.data.patientId == request.auth.uid
+      );
+      allow write: if request.auth != null && (
+        resource.data.doctorId == request.auth.uid ||
+        request.resource.data.patientId == request.auth.uid
+      );
+    }
+
+    // Allow doctors to access their appointments
+    match /appointments/{appointmentId} {
+      allow read: if request.auth != null && (
+        resource.data.doctorId == request.auth.uid ||
+        resource.data.patientId == request.auth.uid
+      );
+      allow write: if request.auth != null && (
+        resource.data.doctorId == request.auth.uid ||
+        request.resource.data.patientId == request.auth.uid
+      );
+    }
+
+    // Doctor availability settings
+    match /doctorAvailability/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        docId.split('_')[0] == request.auth.uid && 
+        isDoctor();
+    }
+
+    // Medical records access
+    match /patients/{patientId}/medical-records/{recordId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == patientId || // Patient can read their own records
+        isDoctor() // All doctors can read records
+      );
+      allow write: if isDoctor(); // Only doctors can write records
+    }
+
+    // Allow doctors to read all appointments
+    match /appointments/{appointmentId} {
+      allow read, write: if request.auth != null && (
+        resource.data.doctorId == request.auth.uid ||
+        request.resource.data.doctorId == request.auth.uid ||
+        isDoctor()
+      );
+    }
+
+    // Allow doctors to read and write notifications
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null && (
+        resource.data.doctorId == request.auth.uid ||
+        request.resource.data.doctorId == request.auth.uid ||
+        isDoctor()
+      );
+    }
+
+    // Prevent direct client-side writes to the 'mail' collection
+    match /mail/{document} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

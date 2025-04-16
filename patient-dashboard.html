@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .nav-menu {
+            background: #2c3e50;
+            padding: 1rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .patient-info {
+            color: white;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .main-content {
+            margin-top: 80px;
+            padding: 2rem;
+        }
+
+        .welcome-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .action-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .doctors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .doctor-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .doctor-card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            object-fit: cover;
+        }
+
+        .book-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .doctors-booking-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .doctor-booking-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .doctor-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+
+        .booking-modal {
+            width: 95%;
+            max-width: 800px;  /* Increased from 600px */
+            height: auto;
+            min-height: 400px; /* Added to control minimum height */
+            margin: 0 auto;  /* Changed from margin: 5vh auto */
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            max-height: 80vh;  /* Limit maximum height */
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            max-height: 90vh;  /* Added to prevent modal from being too tall */
+            overflow-y: auto;  /* Added scrolling if content is too long */
+            position: relative;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .date-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .date-option {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .date-option.selected {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* Reduced from 100px */
+            gap: 8px; /* Reduced from 10px */
+            margin-top: 20px;
+            padding: 10px;
+        }
+
+        .time-slot {
+            padding: 8px;  /* Reduced from 10px */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            font-size: 0.9em;  /* Slightly smaller font */
+        }
+
+        .time-slot.available {
+            background: #f0f8ff;
+            border-color: #3498db;
+        }
+
+        .time-slot.available:hover {
+            background: #e1f0ff;
+            transform: translateY(-2px);
+        }
+
+        .time-slot.selected {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .time-slot.unavailable {
+            background: #ffebee;
+            color: #d32f2f;
+            border-color: #ffcdd2;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .slot-status {
+            font-size: 0.8em;
+            display: block;
+            margin-top: 4px;
+        }
+
+        .no-slots, .not-available, .error {
+            text-align: center;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .not-available {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .error {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .btn-book {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn-book:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;  /* Changed from display: flex */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1;
+            color: #666;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .appointments-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .appointments-table th,
+        .appointments-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .appointments-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+
+        .appointments-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+
+        .btn-view-report {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-view-report:hover {
+            background-color: #218838;
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        .doctor-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .doctor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .doctor-avatar {
+            width: 80px;
+            height: 80px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 15px;
+        }
+
+        .doctor-card h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .specialization {
+            color: #3498db;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .experience {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .qualifications {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .btn-book {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-book:hover {
+            background: #2980b9;
+        }
+
+        /* Add these new styles for the profile section */
+        .profile-form {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .avatar-text {
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+        }
+
+        .profile-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .profile-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .profile-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .profile-form input,
+        .profile-form textarea,
+        .profile-form select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .profile-form input:focus,
+        .profile-form textarea:focus,
+        .profile-form select:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .profile-form input[readonly] {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+
+        .profile-actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .btn-save-profile {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-save-profile:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-save-profile:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        /* Add these new notification styles */
+        .notifications-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .notification-item {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+            position: relative;
+        }
+
+        .notification-item.unread {
+            background: #f8f9fa;
+            border-left-color: #e74c3c;
+        }
+
+        .notification-time {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .notification-content {
+            margin-right: 100px;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .notification-details {
+            color: #666;
+        }
+
+        .no-notifications {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .btn-enable-notifications {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .btn-enable-notifications:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-menu">
+        <div class="patient-info">
+            <h3 id="patientName">Patient Name</h3>
+        </div>
+        <div class="nav-links">
+            <a href="#dashboard" class="nav-item active" data-section="dashboard">Home</a>
+            <a href="#book" class="nav-item" data-section="book">Book Appointment</a>
+            <a href="#appointments" class="nav-item" data-section="appointments">My Appointments</a>
+            <a href="#doctors" class="nav-item" data-section="doctors">Doctors</a>
+            <a href="#notifications" class="nav-item" data-section="notifications">Notifications</a>
+            <a href="#profile" class="nav-item" data-section="profile">Profile</a>
+            <a href="#" class="nav-item" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="welcome-card">
+                <h2>Welcome back, <span id="welcomeName">Patient</span>!</h2>
+                <p>What would you like to do today?</p>
+            </div>
+            <div class="quick-actions">
+                <div class="action-card" onclick="showSection('book')">
+                    <h3>Book Appointment</h3>
+                    <p>Schedule a new appointment with a doctor</p>
+                </div>
+                <div class="action-card" onclick="showSection('appointments')">
+                    <h3>My Appointments</h3>
+                    <p>View and manage your appointments</p>
+                </div>
+                <div class="action-card" onclick="showSection('doctors')">
+                    <h3>Find Doctors</h3>
+                    <p>Browse our list of specialists</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Book Appointment Section -->
+        <section id="book" class="section">
+            <h2>Book an Appointment</h2>
+            <div class="search-box">
+                <input type="text" id="doctorSearch" placeholder="Search doctors by name or specialization...">
+            </div>
+            <div class="doctors-booking-grid">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- My Appointments Section -->
+        <section id="appointments" class="section">
+            <h2>My Appointments</h2>
+            <div class="appointments-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Doctors List Section -->
+        <section id="doctors" class="section">
+            <h2>Our Doctors</h2>
+            <div class="search-container">
+                <input type="text" 
+                       id="doctorSearchInput" 
+                       placeholder="Search doctors by name, specialization, or qualifications..."
+                       class="search-input"
+                       onkeyup="handleDoctorSearch(event)">
+            </div>
+            <div class="doctors-grid">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Notifications Section -->
+        <section id="notifications" class="section">
+            <h2>Notifications</h2>
+            <div class="notifications-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="section">
+            <h2>My Profile</h2>
+            <div class="profile-container">
+                <form id="profileForm" class="profile-form">
+                    <!-- Will be populated by JavaScript -->
+                    <div class="form-group">
+                        <label>Notifications</label>
+                        <button type="button" 
+                                class="btn-enable-notifications" 
+                                onclick="requestNotificationPermission()">
+                            Enable Notifications
+                        </button>
+                        <small>Enable notifications to receive appointment reminders</small>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content booking-modal">
+            <span class="close">&times;</span>
+            <h2>Book Appointment with <span id="selectedDoctorName"></span></h2>
+            <div class="booking-calendar">
+                <h3>Select Date and Time</h3>
+                <div class="date-selector">
+                    <!-- Will be populated with available dates -->
+                </div>
+                <div class="time-slots">
+                    <!-- Will be populated with available time slots -->
+                </div>
+            </div>
+            <button id="confirmBooking" class="btn-book" disabled>Confirm Booking</button>
+        </div>
+    </div>
+
+    <div id="appointmentDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Appointment Details</h2>
+            <div id="appointmentDetails"></div>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeReportModal()">&times;</span>
+            <h2>Medical Report</h2>
+            <div id="reportDetails">
+                <!-- Report details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="patient-dashboard.js"></script>
+</body>
+</html>

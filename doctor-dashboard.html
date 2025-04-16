@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .nav-menu {
+            background: #2c3e50;
+            padding: 1rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .main-content {
+            margin-left: 0;
+            margin-top: 80px;
+            padding: 2rem;
+            width: 100%;
+            max-width: none; /* Remove max-width constraint */
+            box-sizing: border-box;
+        }
+
+        .section {
+            display: none;
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .diagnosis-modal {
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .availability-form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+        }
+
+        .appointments-container {
+            width: 100%;
+            margin-top: 20px;
+            overflow-x: auto;
+            display: block; /* Change from grid to block */
+        }
+
+        .appointments-table {
+            width: 100%;
+            min-width: 800px; /* Ensures table doesn't get too squeezed */
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin: 0; /* Remove any margin */
+        }
+
+        #todayAppointments {
+            width: 100%;
+            min-width: 800px;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin: 0; /* Remove any margin */
+        }
+
+        #appointmentsTable {
+            width: 100%;
+            min-width: 800px;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin: 0; /* Remove any margin */
+        }
+
+        .appointments-table th,
+        .appointments-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .btn-report {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-report:hover {
+            background-color: #45a049;
+        }
+
+        .patients-records-container {
+            margin-top: 20px;
+        }
+
+        .patient-record {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .patient-info {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .record-card {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .record-date {
+            color: #666;
+        }
+
+        .doctor-name {
+            color: #007bff;
+        }
+
+        .record-body p {
+            margin: 5px 0;
+        }
+
+        #patientSearch {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .availability-container {
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .availability-form {
+            width: 100%;
+            max-width: none;
+        }
+
+        .date-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .date-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .time-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .not-available-toggle {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .not-available-toggle.active {
+            background: #28a745;
+        }
+
+        .time-settings {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .date-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .date-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .availability-toggle {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .availability-toggle.available {
+            background: #28a745;
+        }
+
+        .btn-save-schedule {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 200px;
+            margin: 20px auto;
+            display: block;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-save-schedule:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-save-schedule:active {
+            transform: scale(0.98);
+        }
+
+        #slotDuration {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        small {
+            color: #666;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .time-input-group {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .time-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .notifications-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .notification-item {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+            position: relative;
+        }
+
+        .notification-item.unread {
+            background: #f8f9fa;
+            border-left-color: #e74c3c;
+        }
+
+        .notification-time {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .notification-content {
+            margin-right: 100px;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .notification-details {
+            color: #666;
+        }
+
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 60px;
+            background: #3498db;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar-text {
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .profile-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .profile-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .profile-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .profile-form input,
+        .profile-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .profile-form input:focus,
+        .profile-form textarea:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .profile-form input[readonly] {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+
+        .profile-actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .btn-save-profile {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-save-profile:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-menu">
+        <div class="doctor-info">
+            <h3 id="doctorName">Dr. Name</h3>
+            <p id="doctorSpecialization">Specialization</p>
+        </div>
+        <div class="nav-links">
+            <a href="#dashboard" class="nav-item active" data-section="dashboard">Dashboard</a>
+            <a href="#appointments" class="nav-item" data-section="appointments">Appointments</a>
+            <a href="#patients" class="nav-item" data-section="patients">Patient Records</a>
+            <a href="#availability" class="nav-item" data-section="availability">Set Availability</a>
+            <a href="#notifications" class="nav-item" data-section="notifications">Notifications</a>
+            <a href="#profile" class="nav-item" data-section="profile">Profile</a>
+            <a href="#" class="nav-item" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <h2>Dashboard</h2>
+            <div class="stats-grid">
+                <!-- Stats will be populated by JavaScript -->
+            </div>
+            <div class="upcoming-appointments">
+                <h3>Today's Appointments</h3>
+                <table id="todayAppointments">
+                    <!-- Appointments will be populated by JavaScript -->
+                </table>
+            </div>
+        </section>
+
+        <!-- Update the appointments section -->
+        <section id="appointments" class="section">
+            <h2>Upcoming Appointments</h2>
+            <div class="appointments-container">
+                <table id="appointmentsTable" class="appointments-table">
+                    <!-- Will be populated by JavaScript -->
+                </table>
+            </div>
+        </section>
+
+        <!-- Patient Records Section -->
+        <section id="patients" class="section">
+            <h2>Patient Records</h2>
+            <div class="search-box">
+                <input type="text" id="patientSearch" placeholder="Search patients by name or email...">
+            </div>
+            <div id="patientsRecordsContainer" class="patients-records-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Set Availability Section -->
+        <section id="availability" class="section">
+            <h2>Set Availability</h2>
+            <div class="availability-container">
+                <form id="availabilityForm" class="availability-form">
+                    <div class="date-slots">
+                        <!-- Will be dynamically populated -->
+                    </div>
+                    <div class="time-settings">
+                        <div class="form-group">
+                            <label for="slotDuration">Duration per appointment (minutes):</label>
+                            <input type="number" 
+                                   id="slotDuration" 
+                                   min="15" 
+                                   max="120" 
+                                   step="5" 
+                                   value="30" 
+                                   required>
+                            <small>Enter duration between 15-120 minutes</small>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-save-schedule">Save Schedule</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Notifications Section -->
+        <section id="notifications" class="section">
+            <h2>Notifications</h2>
+            <div class="notifications-container">
+                <!-- Notifications will be populated here -->
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="section">
+            <h2>Doctor Profile</h2>
+            <div class="profile-container">
+                <form id="profileForm" class="profile-form">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <span class="avatar-text"></span>
+                        </div>
+                    </div>
+                    <div class="profile-fields">
+                        <div class="form-group">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" id="fullName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="specialization">Specialization</label>
+                            <input type="text" id="specialization" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phoneNumber">Phone Number</label>
+                            <input type="tel" id="phoneNumber" pattern="[0-9]{10}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="experience">Experience (years)</label>
+                            <input type="number" id="experience" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="qualifications">Qualifications</label>
+                            <textarea id="qualifications" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="bio">About Me</label>
+                            <textarea id="bio" rows="4"></textarea>
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        <button type="submit" class="btn-save-profile">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Other sections... -->
+    </main>
+
+    <!-- Diagnosis Modal -->
+    <div id="diagnosisModal" class="modal">
+        <div class="modal-content diagnosis-modal">
+            <h2>Patient Diagnosis</h2>
+            <form id="diagnosisForm">
+                <input type="hidden" id="appointmentId">
+                <input type="hidden" id="patientId">
+                <div class="form-group">
+                    <label>Height (cm):</label>
+                    <input type="number" id="height" required>
+                </div>
+                <div class="form-group">
+                    <label>Weight (kg):</label>
+                    <input type="number" id="weight" required>
+                </div>
+                <div class="form-group">
+                    <label>Problems:</label>
+                    <textarea id="problems" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Diagnosis:</label>
+                    <textarea id="diagnosis" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Prescription:</label>
+                    <textarea id="prescription" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Diagnosis</button>
+                <button type="button" class="btn" onclick="closeDiagnosisModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeReportModal()">&times;</span>
+            <h2>Patient Report</h2>
+            <div id="reportDisplay"></div>
+            <form id="reportForm">
+                <input type="hidden" id="appointmentId">
+                <input type="hidden" id="patientId">
+                <div class="form-group">
+                    <label>Height (cm):</label>
+                    <input type="number" id="patientHeight" required>
+                </div>
+                <div class="form-group">
+                    <label>Weight (kg):</label>
+                    <input type="number" id="patientWeight" required>
+                </div>
+                <div class="form-group">
+                    <label>Diagnosis:</label>
+                    <textarea id="patientDiagnosis" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Prescription:</label>
+                    <textarea id="patientPrescription" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Report</button>
+                <button type="button" class="btn" onclick="closeReportModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="appointmentDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Appointment Details</h2>
+            <div id="appointmentDetails">
+                <div class="patient-info"></div>
+                <div class="appointment-actions">
+                    <button id="markComplete" class="btn btn-primary">Mark as Complete</button>
+                    <button id="addNotes" class="btn btn-secondary">Add Notes</button>
+                </div>
+                <div class="appointment-notes"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="doctor-dashboard.js"></script>
+
+    <!-- Medical Record Modal -->
+    <div id="medicalRecordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMedicalRecordModal()">&times;</span>
+            <h2>Medical Record Details</h2>
+            <div id="medicalRecordDetails">
+                <!-- Medical record details will be populated here -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>
